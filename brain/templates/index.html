@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Plotclock</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --pla-gray:       #a8a4a0;
+            --pla-dark:       #7e7b78;
+            --pla-darker:     #636160;
+            --pla-light:      #c4c0bc;
+            --pla-lighter:    #d8d5d0;
+            --servo-blue:     #3560a8;
+            --servo-blue-hi:  #4a78c8;
+            --servo-blue-lo:  #1e3e78;
+            --wire-brown:     #7a3e20;
+            --wire-red:       #c82018;
+            --wire-orange:    #e07010;
+            --tape:           rgba(234, 215, 148, 0.72);
+            --tape-edge:      rgba(200, 178, 100, 0.50);
+            --text-dark:      #1e1c18;
+            --text-mid:       #4a4640;
+            --text-light:     #ece8e2;
+            --text-dim:       rgba(236, 232, 226, 0.55);
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--pla-gray);
+            color: var(--text-dark);
+            font-family: 'Courier New', 'Lucida Console', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 14px 48px;
+        }
+
+        /* ══ WIRE HEADER STRIPE ══════════════════════════════════════
+           Simula la vista transversal del cable de 3 pines del servo  */
+        .wire-header {
+            width: 100%;
+            max-width: 668px;
+            display: flex;
+            height: 6px;
+            gap: 2px;
+            margin-bottom: 18px;
+        }
+        .wire-header div { flex: 1; }
+        .wh-brown { background: var(--wire-brown); }
+        .wh-red   { background: var(--wire-red); }
+        .wh-orange{ background: var(--wire-orange); }
+
+        /* ══ HEADER ══════════════════════════════════════════════════ */
+        .header {
+            width: 100%;
+            max-width: 668px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            gap: 12px;
+        }
+
+        /* Etiqueta estilo cinta de carrocero con título */
+        .title-tape {
+            background: var(--tape);
+            border: 1px solid var(--tape-edge);
+            padding: 6px 14px 6px 12px;
+            position: relative;
+            transform: rotate(-0.8deg);
+            flex-shrink: 0;
+        }
+        /* Pedacito de cinta de agarre arriba */
+        .title-tape::before {
+            content: '';
+            position: absolute;
+            top: -6px; left: 14px;
+            width: 36px; height: 8px;
+            background: rgba(234, 215, 148, 0.55);
+            border: 1px solid var(--tape-edge);
+            transform: rotate(0.6deg);
+        }
+
+        .title-main {
+            font-family: 'Arial Black', 'Impact', 'Arial', sans-serif;
+            font-size: 19px;
+            font-weight: 900;
+            color: var(--text-dark);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .title-sub {
+            font-size: 9px;
+            color: var(--text-mid);
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+
+        .header-meta {
+            font-size: 9px;
+            color: var(--text-mid);
+            text-align: right;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            line-height: 1.7;
+            padding-top: 2px;
+        }
+
+        /* ══ PANEL (MARCO DEL CANVAS) ════════════════════════════════
+           Simula un panel de plástico gris, con relieve y tornillos   */
+        .panel {
+            width: 100%;
+            max-width: 668px;
+            background: var(--pla-dark);
+            padding: 14px;
+            border-top:    3px solid var(--pla-light);
+            border-left:   3px solid var(--pla-light);
+            border-right:  3px solid var(--pla-darker);
+            border-bottom: 3px solid var(--pla-darker);
+            position: relative;
+        }
+
+        /* Tornillos en esquinas */
+        .screw {
+            position: absolute;
+            width: 11px; height: 11px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #c8c4be, #7a7672);
+            border: 1px solid #585450;
+            z-index: 3;
+        }
+        .screw::after {
+            content: '';
+            position: absolute;
+            top: 4px; left: 1px; right: 1px;
+            height: 1.5px;
+            background: rgba(60, 55, 50, 0.7);
+            transform: rotate(40deg);
+            transform-origin: center;
+        }
+        .screw.tl { top: 4px;  left: 4px;  }
+        .screw.tr { top: 4px;  right: 4px; }
+        .screw.bl { bottom: 4px; left: 4px;  }
+        .screw.br { bottom: 4px; right: 4px; }
+
+        /* Tiras de cinta sobre las esquinas del lienzo */
+        .tape-strip {
+            position: absolute;
+            background: var(--tape);
+            border: 1px solid var(--tape-edge);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .tape-tl { top: 22px;  left: 22px;  width: 52px; height: 13px; transform: rotate(-2.5deg); }
+        .tape-tr { top: 24px;  right: 20px; width: 48px; height: 13px; transform: rotate(1.8deg);  }
+        .tape-br { bottom:22px; right: 22px; width: 44px; height: 13px; transform: rotate(-1deg);  }
+
+        /* El canvas en sí */
+        canvas {
+            display: block;
+            width: 100%;
+            aspect-ratio: 64 / 50;
+            background: #ffffff;
+            border: 2px solid #444240;
+            touch-action: none;
+            cursor: crosshair;
+            position: relative;
+            z-index: 1;
+        }
+        canvas.drawing { border-color: var(--servo-blue-hi); }
+
+        /* ══ BARRA DE INFO ═══════════════════════════════════════════ */
+        .info-bar {
+            width: 100%;
+            max-width: 668px;
+            background: var(--pla-darker);
+            border-top: 1px solid #505050;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            gap: 8px;
+        }
+        .info-item {
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .info-item b {
+            color: var(--text-light);
+            font-weight: bold;
+        }
+
+        /* ══ BOTONERA ════════════════════════════════════════════════ */
+        .toolbar {
+            width: 100%;
+            max-width: 668px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px 12px;
+            border: none;
+            font-family: 'Arial Black', 'Impact', sans-serif;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: relative;
+            outline: none;
+            transition: filter 0.1s;
+        }
+
+        .btn:active { transform: translateY(2px); filter: brightness(0.88); }
+
+        /* Botón Borrar: plástico gris desgastado */
+        .btn-clear {
+            background: var(--pla-light);
+            border-top:    2px solid var(--pla-lighter);
+            border-left:   2px solid var(--pla-lighter);
+            border-right:  2px solid var(--pla-darker);
+            border-bottom: 2px solid var(--pla-darker);
+            color: var(--text-dark);
+        }
+        .btn-clear:hover { background: #cecac4; }
+
+        /* Botón Imprimir: azul del servo */
+        .btn-print {
+            background: var(--servo-blue);
+            border-top:    2px solid var(--servo-blue-hi);
+            border-left:   2px solid var(--servo-blue-hi);
+            border-right:  2px solid var(--servo-blue-lo);
+            border-bottom: 2px solid var(--servo-blue-lo);
+            color: #ffffff;
+            overflow: hidden;
+        }
+        .btn-print:hover:not(:disabled) { background: #3d6ab8; }
+
+        /* Franja de cable en el botón imprimir (izquierda) */
+        .btn-print::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 6px;
+            background: linear-gradient(
+                to bottom,
+                var(--wire-brown) 33.3%,
+                var(--wire-red)   33.3% 66.6%,
+                var(--wire-orange) 66.6%
+            );
+        }
+
+        .btn-print:disabled {
+            background: var(--pla-dark);
+            border-top-color:   #666460;
+            border-left-color:  #666460;
+            border-right-color: #505050;
+            border-bottom-color:#505050;
+            color: var(--text-dim);
+            cursor: not-allowed;
+        }
+        .btn-print:disabled::before { opacity: 0.3; }
+
+        /* Texto del botón con margen por la franja */
+        .btn-print .btn-inner { padding-left: 8px; }
+
+        /* ══ TOAST ═══════════════════════════════════════════════════ */
+        .toast {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%) translateY(56px);
+            background: var(--pla-darker);
+            border: 1px solid #555250;
+            padding: 8px 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            color: var(--text-light);
+            text-transform: uppercase;
+            opacity: 0;
+            transition: transform 0.22s ease, opacity 0.22s ease;
+            z-index: 99;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.ok  { border-color: #5a9a50; color: #88dd78; }
+        .toast.err { border-color: var(--wire-red); color: #f08080; }
+    </style>
+</head>
+<body>
+
+    <!-- Cable del servo: franja decorativa de 3 colores -->
+    <div class="wire-header">
+        <div class="wh-brown"></div>
+        <div class="wh-red"></div>
+        <div class="wh-orange"></div>
+    </div>
+
+    <header class="header">
+        <div class="title-tape">
+            <div class="title-main">CalkiDroid</div>
+            <div class="title-sub">Drawing / Maths Robot &middot; ESP32</div>
+        </div>
+        <div class="header-meta">
+            Área útil<br>
+            64 &times; 50 mm<br>
+            Res &ge; 1 mm
+        </div>
+    </header>
+
+    <!-- Marco tipo panel de plástico con tornillos y cinta -->
+    <div class="panel">
+        <div class="screw tl"></div>
+        <div class="screw tr"></div>
+        <div class="screw bl"></div>
+        <div class="screw br"></div>
+        <div class="tape-strip tape-tl"></div>
+        <div class="tape-strip tape-tr"></div>
+        <div class="tape-strip tape-br"></div>
+        <canvas id="pizarra" width="640" height="500"></canvas>
+    </div>
+
+    <!-- Info strip debajo del panel -->
+    <div class="info-bar">
+        <div class="info-item">TRAZOS: <b id="conteo">0</b></div>
+        <div class="info-item" id="coords">X: &mdash; &nbsp; Y: &mdash;</div>
+        <div class="info-item">LISTO</div>
+    </div>
+
+    <div class="toolbar">
+        <button class="btn btn-clear" onclick="limpiarPantalla()">&#x2715; Borrar</button>
+        <button class="btn btn-print" id="btnPrint" onclick="imprimirRobot()" disabled>
+            <span class="btn-inner">&#9113; Imprimir</span>
+        </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const canvas   = document.getElementById('pizarra');
+        const ctx      = canvas.getContext('2d');
+        const elConteo = document.getElementById('conteo');
+        const elCoords = document.getElementById('coords');
+        const btnPrint = document.getElementById('btnPrint');
+        const toast    = document.getElementById('toast');
+
+        ctx.lineWidth   = 4;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+        ctx.strokeStyle = '#1a1a1a';
+
+        let dibujando       = false;
+        let trazosGuardados = [];
+        let trazoActual     = [];
+
+        // ── Coordenadas ───────────────────────────────────────────────
+        function obtenerPuntoCartesiano(e) {
+            const rect    = canvas.getBoundingClientRect();
+            const clienteX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clienteY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const escalaX = canvas.width  / rect.width;
+            const escalaY = canvas.height / rect.height;
+            const canvasX = (clienteX - rect.left) * escalaX;
+            const canvasY = (clienteY - rect.top)  * escalaY;
+
+            const mmX = canvasX / 10.0;
+            const mmY = 50.0 - (canvasY / 10.0);
+
+            return { x: mmX, y: mmY, pX: canvasX, pY: canvasY };
+        }
+
+        // ── Dibujo ────────────────────────────────────────────────────
+        function iniciarTrazo(e) {
+            e.preventDefault();
+            dibujando = true;
+            canvas.classList.add('drawing');
+            const p = obtenerPuntoCartesiano(e);
+            trazoActual = [p];
+            ctx.beginPath();
+            ctx.moveTo(p.pX, p.pY);
+            mostrarCoords(p);
+        }
+
+        function continuarTrazo(e) {
+            e.preventDefault();
+            if (!dibujando) return;
+            const p    = obtenerPuntoCartesiano(e);
+            const prev = trazoActual[trazoActual.length - 1];
+            const dist = Math.hypot(p.x - prev.x, p.y - prev.y);
+            mostrarCoords(p);
+            if (dist >= 1.0) {
+                trazoActual.push(p);
+                ctx.lineTo(p.pX, p.pY);
+                ctx.stroke();
+            }
+        }
+
+        function terminarTrazo(e) {
+            e.preventDefault();
+            if (!dibujando) return;
+            dibujando = false;
+            canvas.classList.remove('drawing');
+            if (trazoActual.length > 1) {
+                trazosGuardados.push(trazoActual);
+                actualizarUI();
+            }
+        }
+
+        canvas.addEventListener('mousedown',  iniciarTrazo);
+        canvas.addEventListener('mousemove',  continuarTrazo);
+        canvas.addEventListener('mouseup',    terminarTrazo);
+        canvas.addEventListener('mouseleave', e => { if (dibujando) terminarTrazo(e); });
+        canvas.addEventListener('touchstart', iniciarTrazo,   { passive: false });
+        canvas.addEventListener('touchmove',  continuarTrazo, { passive: false });
+        canvas.addEventListener('touchend',   terminarTrazo,  { passive: false });
+
+        // ── Helpers de UI ─────────────────────────────────────────────
+        function mostrarCoords(p) {
+            elCoords.textContent = `X: ${p.x.toFixed(1)}  Y: ${p.y.toFixed(1)}`;
+        }
+
+        function actualizarUI() {
+            elConteo.textContent = trazosGuardados.length;
+            btnPrint.disabled    = trazosGuardados.length === 0;
+        }
+
+        function mostrarToast(msg, tipo) {
+            toast.textContent = msg;
+            toast.className   = `toast ${tipo} show`;
+            clearTimeout(toast._tid);
+            toast._tid = setTimeout(() => { toast.className = `toast ${tipo}`; }, 3000);
+        }
+
+        // ── Acciones ──────────────────────────────────────────────────
+        function limpiarPantalla() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            trazosGuardados = [];
+            trazoActual     = [];
+            elCoords.textContent = 'X: \u2014 \u00a0 Y: \u2014';
+            actualizarUI();
+        }
+
+        function imprimirRobot() {
+            if (trazosGuardados.length === 0) {
+                mostrarToast('DIBUJA ALGO PRIMERO', 'err');
+                return;
+            }
+            btnPrint.querySelector('.btn-inner').textContent = 'Enviando...';
+            btnPrint.disabled = true;
+
+            fetch('/print', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ trazos: trazosGuardados })
+            })
+            .then(res => res.json())
+            .then(data => mostrarToast(data.status || 'ENVIADO OK', 'ok'))
+            .catch(() => mostrarToast('ERROR DE CONEXION', 'err'))
+            .finally(() => {
+                btnPrint.querySelector('.btn-inner').textContent = '\u2339 Imprimir';
+                btnPrint.disabled = trazosGuardados.length === 0;
+            });
+        }
+    </script>
+</body>
+</html>
