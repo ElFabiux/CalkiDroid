@@ -1,0 +1,4 @@
+flask
+pyserial
+SpeechRecognition
+pydub

@@ -111,6 +111,38 @@
             padding-top: 2px;
         }
 
+        /* ══ SWITCH DE MODO ══════════════════════════════════════════ */
+        .mode-switch {
+            width: 100%;
+            max-width: 668px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .btn-mode {
+            background: var(--pla-light);
+            border-top:    2px solid var(--pla-lighter);
+            border-left:   2px solid var(--pla-lighter);
+            border-right:  2px solid var(--pla-darker);
+            border-bottom: 2px solid var(--pla-darker);
+            color: var(--text-dark);
+            padding: 10px 8px;
+            font-family: 'Arial Black', 'Impact', sans-serif;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-mode.active {
+            background: var(--servo-blue);
+            border-top-color: var(--servo-blue-hi);
+            border-left-color: var(--servo-blue-hi);
+            border-right-color: var(--servo-blue-lo);
+            border-bottom-color: var(--servo-blue-lo);
+            color: #fff;
+        }
+
         /* ══ PANEL (MARCO DEL CANVAS) ════════════════════════════════
            Simula un panel de plástico gris, con relieve y tornillos   */
         .panel {
@@ -174,6 +206,61 @@
         }
         canvas.drawing { border-color: var(--servo-blue-hi); }
 
+        /* Panel alternativo para calculadora, conservando el estilo viejo */
+        .calculator-card {
+            display: none;
+            width: 100%;
+            aspect-ratio: 64 / 50;
+            background: #ffffff;
+            border: 2px solid #444240;
+            position: relative;
+            z-index: 1;
+            padding: 24px 18px 18px;
+            flex-direction: column;
+            justify-content: center;
+            gap: 12px;
+        }
+        body.calc-mode canvas { display: none; }
+        body.calc-mode .calculator-card { display: flex; }
+
+        .calc-label {
+            font-family: 'Arial Black', 'Impact', sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-dark);
+        }
+        .calc-display {
+            border: 2px solid #444240;
+            background: #e9e5de;
+            padding: 10px;
+            min-height: 74px;
+            font-size: 12px;
+            line-height: 1.55;
+            color: var(--text-mid);
+            overflow-wrap: anywhere;
+        }
+        .calc-display b { color: var(--text-dark); }
+        .calc-hint {
+            font-size: 10px;
+            color: var(--text-mid);
+            line-height: 1.5;
+        }
+        .manual-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+        }
+        .manual-row input {
+            border: 2px solid #444240;
+            background: #f5f2eb;
+            padding: 9px 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-dark);
+            outline: none;
+        }
+
         /* ══ BARRA DE INFO ═══════════════════════════════════════════ */
         .info-bar {
             width: 100%;
@@ -199,7 +286,8 @@
         }
 
         /* ══ BOTONERA ════════════════════════════════════════════════ */
-        .toolbar {
+        .toolbar,
+        .toolbar-section {
             width: 100%;
             max-width: 668px;
             display: grid;
@@ -207,6 +295,8 @@
             gap: 8px;
             margin-top: 10px;
         }
+        .toolbar-section { display: none; }
+        .toolbar-section.active { display: grid; }
 
         .btn {
             display: flex;
@@ -229,7 +319,8 @@
         .btn:active { transform: translateY(2px); filter: brightness(0.88); }
 
         /* Botón Borrar: plástico gris desgastado */
-        .btn-clear {
+        .btn-clear,
+        .btn-small {
             background: var(--pla-light);
             border-top:    2px solid var(--pla-lighter);
             border-left:   2px solid var(--pla-lighter);
@@ -237,10 +328,13 @@
             border-bottom: 2px solid var(--pla-darker);
             color: var(--text-dark);
         }
-        .btn-clear:hover { background: #cecac4; }
+        .btn-small { padding: 9px 10px; font-size: 10px; }
+        .btn-clear:hover,
+        .btn-small:hover { background: #cecac4; }
 
         /* Botón Imprimir: azul del servo */
-        .btn-print {
+        .btn-print,
+        .btn-record {
             background: var(--servo-blue);
             border-top:    2px solid var(--servo-blue-hi);
             border-left:   2px solid var(--servo-blue-hi);
@@ -249,10 +343,19 @@
             color: #ffffff;
             overflow: hidden;
         }
-        .btn-print:hover:not(:disabled) { background: #3d6ab8; }
+        .btn-record.recording {
+            background: var(--wire-red);
+            border-top-color: #e0524c;
+            border-left-color: #e0524c;
+            border-right-color: #8a1510;
+            border-bottom-color: #8a1510;
+        }
+        .btn-print:hover:not(:disabled),
+        .btn-record:hover:not(:disabled) { background: #3d6ab8; }
 
         /* Franja de cable en el botón imprimir (izquierda) */
-        .btn-print::before {
+        .btn-print::before,
+        .btn-record::before {
             content: '';
             position: absolute;
             left: 0; top: 0; bottom: 0;
@@ -265,7 +368,8 @@
             );
         }
 
-        .btn-print:disabled {
+        .btn-print:disabled,
+        .btn-record:disabled {
             background: var(--pla-dark);
             border-top-color:   #666460;
             border-left-color:  #666460;
@@ -274,10 +378,12 @@
             color: var(--text-dim);
             cursor: not-allowed;
         }
-        .btn-print:disabled::before { opacity: 0.3; }
+        .btn-print:disabled::before,
+        .btn-record:disabled::before { opacity: 0.3; }
 
         /* Texto del botón con margen por la franja */
-        .btn-print .btn-inner { padding-left: 8px; }
+        .btn-print .btn-inner,
+        .btn-record .btn-inner { padding-left: 8px; }
 
         /* ══ TOAST ═══════════════════════════════════════════════════ */
         .toast {
@@ -324,6 +430,11 @@
         </div>
     </header>
 
+    <div class="mode-switch">
+        <button class="btn-mode active" id="btnModeDraw" onclick="cambiarModo('draw')">Modo Dibujo</button>
+        <button class="btn-mode" id="btnModeCalc" onclick="cambiarModo('calc')">Modo Calculador</button>
+    </div>
+
     <!-- Marco tipo panel de plástico con tornillos y cinta -->
     <div class="panel">
         <div class="screw tl"></div>
@@ -333,20 +444,46 @@
         <div class="tape-strip tape-tl"></div>
         <div class="tape-strip tape-tr"></div>
         <div class="tape-strip tape-br"></div>
+
         <canvas id="pizarra" width="640" height="500"></canvas>
+
+        <div class="calculator-card" id="calculatorCard">
+            <div class="calc-label">Entrada por voz</div>
+            <div class="calc-display" id="calcDisplay">
+                <b>Operación:</b> —<br>
+                <b>Resultado:</b> —<br>
+                <b>Robot:</b> —
+            </div>
+            <div class="calc-hint">
+                Ejemplo: “dos más seis dividido entre tres”. Si el sistema no entiende la voz, no enviará nada al robot.
+            </div>
+            <div class="manual-row">
+                <input id="manualText" type="text" placeholder="Prueba: dos mas seis dividido entre tres">
+                <button class="btn btn-small" onclick="procesarTextoManual()">Probar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Info strip debajo del panel -->
     <div class="info-bar">
-        <div class="info-item">TRAZOS: <b id="conteo">0</b></div>
+        <div class="info-item" id="infoLeft">TRAZOS: <b id="conteo">0</b></div>
         <div class="info-item" id="coords">X: &mdash; &nbsp; Y: &mdash;</div>
-        <div class="info-item">LISTO</div>
+        <div class="info-item" id="infoRight">LISTO</div>
     </div>
 
-    <div class="toolbar">
+    <div class="toolbar-section active" id="toolbarDraw">
         <button class="btn btn-clear" onclick="limpiarPantalla()">&#x2715; Borrar</button>
         <button class="btn btn-print" id="btnPrint" onclick="imprimirRobot()" disabled>
             <span class="btn-inner">&#9113; Imprimir</span>
+        </button>
+    </div>
+
+    <div class="toolbar-section" id="toolbarCalc">
+        <button class="btn btn-record" id="btnRecord" onclick="toggleGrabacion()">
+            <span class="btn-inner">&#9679; Grabar voz</span>
+        </button>
+        <button class="btn btn-print" id="btnPrintCalc" onclick="imprimirCalculo()" disabled>
+            <span class="btn-inner">&#9113; Imprimir resultado</span>
         </button>
     </div>
 
@@ -360,14 +497,55 @@
         const btnPrint = document.getElementById('btnPrint');
         const toast    = document.getElementById('toast');
 
+        const btnModeDraw = document.getElementById('btnModeDraw');
+        const btnModeCalc = document.getElementById('btnModeCalc');
+        const toolbarDraw = document.getElementById('toolbarDraw');
+        const toolbarCalc = document.getElementById('toolbarCalc');
+        const infoLeft    = document.getElementById('infoLeft');
+        const infoRight   = document.getElementById('infoRight');
+        const calcDisplay = document.getElementById('calcDisplay');
+        const btnRecord   = document.getElementById('btnRecord');
+        const btnPrintCalc = document.getElementById('btnPrintCalc');
+        const manualText  = document.getElementById('manualText');
+
         ctx.lineWidth   = 4;
         ctx.lineCap     = 'round';
         ctx.lineJoin    = 'round';
         ctx.strokeStyle = '#1a1a1a';
 
-        let dibujando       = false;
-        let trazosGuardados = [];
-        let trazoActual     = [];
+        let modoActual       = 'draw';
+        let dibujando        = false;
+        let trazosGuardados  = [];
+        let trazoActual      = [];
+        let ultimoCalculo    = null;
+        let mediaRecorder    = null;
+        let audioChunks      = [];
+        let streamActual     = null;
+        let autoStopTimer    = null;
+
+        // Tiempo máximo de grabación en milisegundos.
+        // 7000 = 7 segundos, 10000 = 10 segundos, 15000 = 15 segundos.
+        const TIEMPO_MAX_GRABACION_MS = 10000;
+
+        // ── Cambio de modo ───────────────────────────────────────────
+        function cambiarModo(modo) {
+            modoActual = modo;
+            document.body.classList.toggle('calc-mode', modo === 'calc');
+            btnModeDraw.classList.toggle('active', modo === 'draw');
+            btnModeCalc.classList.toggle('active', modo === 'calc');
+            toolbarDraw.classList.toggle('active', modo === 'draw');
+            toolbarCalc.classList.toggle('active', modo === 'calc');
+
+            if (modo === 'draw') {
+                infoLeft.innerHTML = `TRAZOS: <b id="conteo">${trazosGuardados.length}</b>`;
+                elCoords.textContent = 'X: \u2014 \u00a0 Y: \u2014';
+                infoRight.textContent = 'LISTO';
+            } else {
+                infoLeft.innerHTML = 'MODO: <b>CALC</b>';
+                elCoords.textContent = 'VOZ: INACTIVA';
+                infoRight.textContent = 'LISTO';
+            }
+        }
 
         // ── Coordenadas ───────────────────────────────────────────────
         function obtenerPuntoCartesiano(e) {
@@ -388,6 +566,7 @@
 
         // ── Dibujo ────────────────────────────────────────────────────
         function iniciarTrazo(e) {
+            if (modoActual !== 'draw') return;
             e.preventDefault();
             dibujando = true;
             canvas.classList.add('drawing');
@@ -399,6 +578,7 @@
         }
 
         function continuarTrazo(e) {
+            if (modoActual !== 'draw') return;
             e.preventDefault();
             if (!dibujando) return;
             const p    = obtenerPuntoCartesiano(e);
@@ -413,6 +593,7 @@
         }
 
         function terminarTrazo(e) {
+            if (modoActual !== 'draw') return;
             e.preventDefault();
             if (!dibujando) return;
             dibujando = false;
@@ -437,8 +618,9 @@
         }
 
         function actualizarUI() {
-            elConteo.textContent = trazosGuardados.length;
-            btnPrint.disabled    = trazosGuardados.length === 0;
+            const conteoActual = document.getElementById('conteo');
+            if (conteoActual) conteoActual.textContent = trazosGuardados.length;
+            btnPrint.disabled = trazosGuardados.length === 0;
         }
 
         function mostrarToast(msg, tipo) {
@@ -448,7 +630,18 @@
             toast._tid = setTimeout(() => { toast.className = `toast ${tipo}`; }, 3000);
         }
 
-        // ── Acciones ──────────────────────────────────────────────────
+        function actualizarPanelCalculo(data) {
+            ultimoCalculo = data;
+            btnPrintCalc.disabled = !data || !data.printable_text;
+            calcDisplay.innerHTML = `
+                <b>Voz:</b> ${data.spoken_text || '—'}<br>
+                <b>Operación:</b> ${data.operation || '—'}<br>
+                <b>Resultado:</b> ${data.result || '—'}<br>
+                <b>Robot:</b> ${data.printable_text || '—'}
+            `;
+        }
+
+        // ── Acciones: Modo Dibujo ────────────────────────────────────
         function limpiarPantalla() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             trazosGuardados = [];
@@ -471,11 +664,158 @@
                 body:    JSON.stringify({ trazos: trazosGuardados })
             })
             .then(res => res.json())
-            .then(data => mostrarToast(data.status || 'ENVIADO OK', 'ok'))
-            .catch(() => mostrarToast('ERROR DE CONEXION', 'err'))
+            .then(data => {
+                if (data.ok === false) throw new Error(data.status || 'ERROR');
+                mostrarToast(data.status || 'ENVIADO OK', 'ok');
+            })
+            .catch(err => mostrarToast(err.message || 'ERROR DE CONEXION', 'err'))
             .finally(() => {
                 btnPrint.querySelector('.btn-inner').textContent = '\u2339 Imprimir';
                 btnPrint.disabled = trazosGuardados.length === 0;
+            });
+        }
+
+        // ── Acciones: Modo Calculador ────────────────────────────────
+        async function toggleGrabacion() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                detenerGrabacion();
+                return;
+            }
+            await iniciarGrabacion();
+        }
+
+        async function iniciarGrabacion() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+                mostrarToast('MICROFONO NO SOPORTADO', 'err');
+                return;
+            }
+
+            try {
+                ultimoCalculo = null;
+                btnPrintCalc.disabled = true;
+                calcDisplay.innerHTML = `
+                    <b>Voz:</b> Grabando...<br>
+                    <b>Operación:</b> —<br>
+                    <b>Resultado:</b> —<br>
+                    <b>Robot:</b> —
+                `;
+                audioChunks = [];
+                streamActual = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const tipo = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+                mediaRecorder = tipo ? new MediaRecorder(streamActual, { mimeType: tipo }) : new MediaRecorder(streamActual);
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) audioChunks.push(e.data);
+                };
+                mediaRecorder.onstop = enviarAudioCalculadora;
+
+                mediaRecorder.start();
+                btnRecord.classList.add('recording');
+                btnRecord.querySelector('.btn-inner').textContent = '\u25a0 Detener';
+                elCoords.textContent = 'VOZ: GRABANDO';
+                infoRight.textContent = 'ESCUCHANDO';
+                mostrarToast('DICTA LA OPERACION', 'ok');
+
+                clearTimeout(autoStopTimer);
+                autoStopTimer = setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') detenerGrabacion();
+                }, TIEMPO_MAX_GRABACION_MS);
+            } catch (err) {
+                mostrarToast('NO SE PUDO ABRIR EL MICROFONO', 'err');
+            }
+        }
+
+        function detenerGrabacion() {
+            clearTimeout(autoStopTimer);
+            if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+            if (streamActual) streamActual.getTracks().forEach(track => track.stop());
+            btnRecord.classList.remove('recording');
+            btnRecord.querySelector('.btn-inner').textContent = '\u25cf Grabar voz';
+            elCoords.textContent = 'VOZ: PROCESANDO';
+            infoRight.textContent = 'PROCESANDO';
+        }
+
+        async function enviarAudioCalculadora() {
+            try {
+                calcDisplay.innerHTML = `
+                    <b>Voz:</b> Analizando grabación...<br>
+                    <b>Operación:</b> —<br>
+                    <b>Resultado:</b> —<br>
+                    <b>Robot:</b> —
+                `;
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio', blob, 'voz.webm');
+
+                const res = await fetch('/calculate', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!res.ok || data.ok === false) throw new Error(data.status || 'NO SE ENTENDIO');
+
+                actualizarPanelCalculo(data);
+                elCoords.textContent = 'VOZ: OK';
+                infoRight.textContent = 'LISTO';
+                mostrarToast('RESULTADO LISTO', 'ok');
+            } catch (err) {
+                ultimoCalculo = null;
+                btnPrintCalc.disabled = true;
+                calcDisplay.innerHTML = `
+                    <b>Voz:</b> No entendida<br>
+                    <b>Operación:</b> —<br>
+                    <b>Resultado:</b> —<br>
+                    <b>Robot:</b> —
+                `;
+                elCoords.textContent = 'VOZ: ERROR';
+                infoRight.textContent = 'REINTENTAR';
+                mostrarToast(err.message || 'ERROR AL PROCESAR VOZ', 'err');
+            }
+        }
+
+        async function procesarTextoManual() {
+            const text = manualText.value.trim();
+            if (!text) {
+                mostrarToast('ESCRIBE UNA OPERACION', 'err');
+                return;
+            }
+            try {
+                const res = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (!res.ok || data.ok === false) throw new Error(data.status || 'NO SE ENTENDIO');
+                actualizarPanelCalculo(data);
+                elCoords.textContent = 'TEXTO: OK';
+                infoRight.textContent = 'LISTO';
+                mostrarToast('RESULTADO LISTO', 'ok');
+            } catch (err) {
+                mostrarToast(err.message || 'ERROR', 'err');
+            }
+        }
+
+        function imprimirCalculo() {
+            if (!ultimoCalculo || !ultimoCalculo.printable_text) {
+                mostrarToast('NO HAY RESULTADO', 'err');
+                return;
+            }
+            btnPrintCalc.querySelector('.btn-inner').textContent = 'Enviando...';
+            btnPrintCalc.disabled = true;
+
+            fetch('/print-calculation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ printable_text: ultimoCalculo.printable_text })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok === false) throw new Error(data.status || 'ERROR');
+                mostrarToast(data.status || 'RESULTADO ENVIADO', 'ok');
+                infoRight.textContent = 'LISTO';
+            })
+            .catch(err => mostrarToast(err.message || 'ERROR DE CONEXION', 'err'))
+            .finally(() => {
+                btnPrintCalc.querySelector('.btn-inner').textContent = '\u2339 Imprimir resultado';
+                btnPrintCalc.disabled = false;
             });
         }
     </script>
